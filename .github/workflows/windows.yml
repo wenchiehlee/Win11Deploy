@@ -4,7 +4,7 @@ on: [workflow_dispatch]
 jobs:
     build:
       name: Run Script
-      runs-on: [Windows · x64 · Self-hosted]
+      runs-on: [Windows, x64, Self-hosted]
       steps:
         - uses: actions/checkout@v1
         - name: Script
