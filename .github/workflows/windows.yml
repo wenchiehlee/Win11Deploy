@@ -4,7 +4,7 @@ on: [workflow_dispatch]
 jobs:
     build:
       name: Run Script
-      runs-on: windows-latest
+      runs-on:
         group: ZhongZheng782
       steps:
         - uses: actions/checkout@v1
