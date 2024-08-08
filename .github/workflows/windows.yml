@@ -1,9 +1,10 @@
 name: Windows PowerShell
 on:
+  push:
+    branches: [main]
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
     - cron: '0 12 * * 1' # Runs every Monday at noon (UTC)
-
 jobs:
     build:
       name: Run Script
