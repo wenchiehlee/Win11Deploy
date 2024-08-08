@@ -24,5 +24,5 @@ Write-host $env:USERDNSDOMAIN    -ForegroundColor Magenta
 whoami     | Write-host          -ForegroundColor Magenta
 
 sc.exe queryex type= service state= all | Select-String -Pattern "actions.runner" -CaseSensitive -SimpleMatch | Write-host          -ForegroundColor Magenta
-# sc config "actions.runner.wenchiehlee-Win11Deploy.TAICLTB37TMOCQ7" obj= "NT AUTHORITY\SYSTEM" type= own
+# sc.exe config "actions.runner.wenchiehlee-Win11Deploy.TAICLTB37TMOCQ7" obj= "NT AUTHORITY\SYSTEM" type= own
 choco upgrade all -y

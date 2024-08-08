@@ -1,5 +1,7 @@
 name: Windows PowerShell
-on: [workflow_dispatch]
+on:
+  schedule:
+    - cron: '0 12 * * 1' # Runs every Monday at noon (UTC)
 
 jobs:
     build:
