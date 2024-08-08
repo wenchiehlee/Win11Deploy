@@ -1,6 +1,6 @@
 
 
-unction Test-Administrator  
+function Test-Administrator  
 {  
     [OutputType([bool])]
     param()
