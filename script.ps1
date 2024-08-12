@@ -25,4 +25,6 @@ if(-not (Test-Administrator))
     exit 1;
 }
 
+choco install -y wsl2
+
 choco upgrade all -y
