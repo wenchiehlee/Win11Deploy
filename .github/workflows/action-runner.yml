@@ -1,0 +1,19 @@
+name: Action Runner
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allows manual triggering of the workflow
+  schedule:
+    - cron: '*/15 * * * *' # Runs every 15 minutes (UTC)
+concurrency: 
+  group:  ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+    build:
+      timeout-minutes: 14400      # let the job running 10 days..
+      name: Update Action Runner Status
+      runs-on: [Windows, x64, Self-hosted]
+      steps:
+        - uses: actions/checkout@v1
+        - name: python runner-status.py
+          run: python runner-status.py
