@@ -1,4 +1,4 @@
-name: Windows PowerShell
+name: Powershell
 on:
   push:
     branches: [main]
@@ -10,7 +10,7 @@ jobs:
       name: Run Script
       runs-on: [Windows, x64, Self-hosted]
       steps:
-        - uses: actions/checkout@v1
+        - uses: actions/checkout@v2
         - name: Script
           run: .\script.ps1
           shell: powershell
