@@ -27,4 +27,9 @@ if(-not (Test-Administrator))
 
 choco install -y wsl2
 
+wsl --update
+
+choco install -y winmerge
+choco install -y vscode
+
 choco upgrade all -y

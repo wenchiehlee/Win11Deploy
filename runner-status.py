@@ -22,7 +22,7 @@ def get_status(runner):
     if runner['status'] == 'online' and runner['busy'] == True:
         return 'busy'
     elif runner['status'] == 'online' and runner['busy'] == False:
-        return 'online'
+        return 'idle'
     elif runner['status'] == 'offline':
         return 'offline'
     else:
