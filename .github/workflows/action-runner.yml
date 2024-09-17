@@ -16,4 +16,7 @@ jobs:
       steps:
         - uses: actions/checkout@v1
         - name: python runner-status.py
+          env:
+            HEADER_TOKEN: ${{ secrets.HEADER_TOKEN }}
+            GDRIVE_API_CREDENTIALS: ${{ secrets.GDRIVE_API_CREDENTIALS }}
           run: python runner-status.py
