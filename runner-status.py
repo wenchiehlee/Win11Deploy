@@ -1,3 +1,5 @@
+OWNER                         = "wenchiehlee"
+REPO                          = "Win11Deploy"
 TOTAL_FIRST_ID                = 2
 TOTAL_LAST_ID                 = 4
 THIS_FIRST_ID                 = 2  # Last START_ID is 2
@@ -29,11 +31,11 @@ def get_status(runner):
 # Load secret .env file
 load_dotenv()
 # Store credentials
-OWNER                   = os.getenv('OWNER')
-REPO                    = os.getenv('REPO')
 HEADER_TOKEN            = os.getenv('HEADER_TOKEN')
 GDRIVE_API_CREDENTIALS  = os.getenv('GDRIVE_API_CREDENTIALS')
 
+print("HEADER_TOKEN:"+HEADER_TOKEN)
+print("GDRIVE_API_CREDENTIALS:"+GDRIVE_API_CREDENTIALS)
 # ------------------------------------------------------------------
 ## Authorize
 # gc = pygsheets.authorize(service_file='./github-action-runner.json')
@@ -81,11 +83,12 @@ headers = {"Authorization": f"token {HEADER_TOKEN}"}
 response = requests.get(url, headers=headers)
 
 # Check if the request was successful
+count=int(THIS_FIRST_ID)
 if response.status_code == 200:
     runners = response.json().get('runners', [])
     print("|ID |Runner name    |OS        |Repo                    |Status|")
     print("|---|---------------|----------|------------------------|------|")
-    count=int(THIS_FIRST_ID)
+
     count_str=str(count)
     for runner in runners:  
         status=get_status(runner)
