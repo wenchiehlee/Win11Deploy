@@ -2,8 +2,8 @@ OWNER                         = "wenchiehlee"
 REPO                          = "Win11Deploy"
 TOTAL_FIRST_ID                = 2
 TOTAL_LAST_ID                 = 4
-THIS_FIRST_ID                 = 2  # Last START_ID is 2
-THIS_LAST_ID                  = 2
+THIS_FIRST_ID                 = 3
+THIS_LAST_ID                  = 3
 #
 #
 import requests
@@ -67,10 +67,22 @@ wks.update_value('D1', 'Repo')
 wks.update_value('E1', 'Now-Last') 
 wks.update_value('F1', 'Last update') 
 
+print("|ID |Runner name    |OS        |Repo                    |Status |")
+print("|---|---------------|----------|------------------------|-------|")
 # [Index TOTAL_FIRST_ID~THIS_FIRST_ID]:
 for i in range(TOTAL_FIRST_ID, THIS_FIRST_ID ):
     data_A = wks.get_value('A'+str(i))
-    print(str(i))
+    data_C = wks.get_value('C'+str(i))
+    data_F = wks.get_value('F'+str(i))
+    if (data_F):
+        elapsed = (now - datetime.strptime(data_F,"%Y-%m-%d %H:%M:%S"))
+        elapsed_minutes =  round(elapsed.total_seconds() / 60, 1)
+        print(f"|{str(i)}  |{data_A}|----------|------------------------|",end ="")
+        if (elapsed_minutes >= 10):     
+            wks.update_value('C'+str(i), "offline") 
+            print(f"offline|")
+        else:
+            print(f"|{data_C}|")
 
 # Index THIS_FIRST_ID~
 # GitHub API endpoint
@@ -86,8 +98,6 @@ response = requests.get(url, headers=headers)
 count=int(THIS_FIRST_ID)
 if response.status_code == 200:
     runners = response.json().get('runners', [])
-    print("|ID |Runner name    |OS        |Repo                    |Status|")
-    print("|---|---------------|----------|------------------------|------|")
 
     count_str=str(count)
     for runner in runners:  
@@ -108,10 +118,14 @@ if (THIS_LAST_ID+1 != count):
 # [Index count~TOTAL_LAST_ID]:
 for i in range(THIS_LAST_ID+1, TOTAL_LAST_ID+1 ):
     data_A = wks.get_value('A'+str(i))
+    data_C = wks.get_value('C'+str(i))
     data_F = wks.get_value('F'+str(i))
     if (data_F):
         elapsed = (now - datetime.strptime(data_F,"%Y-%m-%d %H:%M:%S"))
         elapsed_minutes =  round(elapsed.total_seconds() / 60, 1)
-        print(f"|{str(i)}  |{data_F}|{str(elapsed_minutes)}|")
-        if (elapsed_minutes >= 10):
+        print(f"|{str(i)}  |{data_A}|----------|------------------------|",end ="")
+        if (elapsed_minutes >= 10):     
             wks.update_value('C'+str(i), "offline") 
+            print(f"offline|")
+        else:
+            print(f"|{data_C}|")
