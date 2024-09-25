@@ -63,9 +63,13 @@ wks_list = sht.worksheets()
 # specify worksheet
 wks = sht.worksheet_by_title('Runners') 
 
-data_E = float(wks.get_value('E2'))
-if (  data_E < 15):
-    print(f"Already updated by others in {data_E}m! Quit!")
+data_F = wks.get_value('F2')
+
+elapsed = (now - datetime.strptime(data_F,"%Y-%m-%d %H:%M:%S"))
+elapsed_minutes =  round(elapsed.total_seconds() / 60, 1)
+
+if (  elapsed_minutes < 15):
+    print(f"Already updated by others in {elapsed_minutes}m! Quit!")
     quit()
 
 # [Index 1]: Update first column
