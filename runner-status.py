@@ -57,7 +57,7 @@ os.unlink(temp.name)
 
 
 now=datetime.now()
-
+print(f"now it is {now}")
 # read whole worksheet
 wks_list = sht.worksheets()
 # specify worksheet
