@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
-    - cron: '*/15 * * * *' # Runs every 15 minutes (UTC)
+    - cron: '*/20 * * * *' # Runs every 20 minutes (UTC)
 concurrency: 
   group:  ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,14 +16,15 @@ jobs:
       steps:
         - name: check repo content
           uses: actions/checkout@v2
-
-#        - name: setup python
-#          uses: actions/setup-python@v2
-#          with:
-#            python-version: '3.x' # install the latest version of python
-
+        - name: setup python
+          uses: actions/setup-python@v5
+          with:
+            python-version: '3.9'
+            cache: 'pip' # caching pip dependencies
+        - run: pip install -r requirements.txt
         - name: python runner-status.py
           env:
-            HEADER_TOKEN: ${{ secrets.HEADER_TOKEN }}
+            ENDPOINT1_HEADER_TOKEN: ${{ secrets.ENDPOINT1_HEADER_TOKEN }}
+            ENDPOINT2_HEADER_TOKEN: ${{ secrets.ENDPOINT2_HEADER_TOKEN }}
             GDRIVE_API_CREDENTIALS: ${{ secrets.GDRIVE_API_CREDENTIALS }}
           run: python runner-status.py

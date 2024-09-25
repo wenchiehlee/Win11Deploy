@@ -1,10 +1,15 @@
-OWNER                         = "wenchiehlee"
-REPO                          = "Win11Deploy"
-TOTAL_FIRST_ID                = 2
-TOTAL_LAST_ID                 = 4
-THIS_FIRST_ID                 = 3
-THIS_LAST_ID                  = 3
-#
+# GitHub API endpoint 1
+ENDPOINT1_ORG="ZhongZheng782"
+GITHUB_API_ENDPOINT1 = f"https://api.github.com/orgs/{ENDPOINT1_ORG}/actions/runners"
+ENDPOINT1_FIRST_ID                 = 2
+ENDPOINT1_LAST_ID                  = 3
+# GitHub API endpoint 2
+ENDPOINT2_ORG="wenchiehlee"
+ENDPOINT2_REPO="Win11Deploy"
+
+GITHUB_API_ENDPOINT2 = f"https://api.github.com/repos/{ENDPOINT2_ORG}/{ENDPOINT2_REPO}/actions/runners"
+ENDPOINT2_FIRST_ID                 = 4
+ENDPOINT2_LAST_ID                  = 4
 #
 import requests
 import pygsheets
@@ -31,11 +36,10 @@ def get_status(runner):
 # Load secret .env file
 load_dotenv()
 # Store credentials
-HEADER_TOKEN            = os.getenv('HEADER_TOKEN')
+ENDPOINT1_HEADER_TOKEN            = os.getenv('ENDPOINT1_HEADER_TOKEN')
+ENDPOINT2_HEADER_TOKEN            = os.getenv('ENDPOINT2_HEADER_TOKEN')
 GDRIVE_API_CREDENTIALS  = os.getenv('GDRIVE_API_CREDENTIALS')
 
-print("HEADER_TOKEN:"+HEADER_TOKEN)
-print("GDRIVE_API_CREDENTIALS:"+GDRIVE_API_CREDENTIALS)
 # ------------------------------------------------------------------
 ## Authorize
 # gc = pygsheets.authorize(service_file='./github-action-runner.json')
@@ -59,73 +63,79 @@ wks_list = sht.worksheets()
 # specify worksheet
 wks = sht.worksheet_by_title('Runners') 
 
+data_E = float(wks.get_value('E2'))
+if (  data_E < 15):
+    print(f"Already updated by others in {data_E}m! Quit!")
+    quit()
+
 # [Index 1]: Update first column
-wks.update_value('A1', 'Runner') 
-wks.update_value('B1', 'OS') 
-wks.update_value('C1', 'Status') 
-wks.update_value('D1', 'Repo') 
-wks.update_value('E1', 'Now-Last') 
-wks.update_value('F1', 'Last update') 
+#wks.update_value('A1', 'Runner') 
+#wks.update_value('B1', 'OS') 
+#wks.update_value('C1', 'Status') 
+#wks.update_value('D1', 'Repo') 
+#wks.update_value('E1', 'Now-Last') 
+#wks.update_value('F1', 'Last update') 
 
 print("|ID |Runner name    |OS        |Repo                    |Status |")
 print("|---|---------------|----------|------------------------|-------|")
-# [Index TOTAL_FIRST_ID~THIS_FIRST_ID]:
-for i in range(TOTAL_FIRST_ID, THIS_FIRST_ID ):
-    data_A = wks.get_value('A'+str(i))
-    data_C = wks.get_value('C'+str(i))
-    data_F = wks.get_value('F'+str(i))
-    if (data_F):
-        elapsed = (now - datetime.strptime(data_F,"%Y-%m-%d %H:%M:%S"))
-        elapsed_minutes =  round(elapsed.total_seconds() / 60, 1)
-        print(f"|{str(i)}  |{data_A}|----------|------------------------|",end ="")
-        if (elapsed_minutes >= 10):     
-            wks.update_value('C'+str(i), "offline") 
-            print(f"offline|")
-        else:
-            print(f"|{data_C}|")
 
-# Index THIS_FIRST_ID~
-# GitHub API endpoint
-url = f"https://api.github.com/repos/{OWNER}/{REPO}/actions/runners"
+# Index ENDPOINT1_FIRST_ID~ENDPOINT1_LAST_ID
 
 # HTTP headers
-headers = {"Authorization": f"token {HEADER_TOKEN}"}
+headers = {"Authorization": f"token {ENDPOINT1_HEADER_TOKEN}"}
 
 # Make the request
-response = requests.get(url, headers=headers)
+response = requests.get(GITHUB_API_ENDPOINT1, headers=headers)
 
 # Check if the request was successful
-count=int(THIS_FIRST_ID)
+count=int(ENDPOINT1_FIRST_ID)
 if response.status_code == 200:
+    #print(f"{response.json()}")
+    runners = response.json().get('runners', [])
+
+    for runner in runners:  
+        count_str=str(count)
+        status=get_status(runner)
+        print(f"|{count_str}  |{runner['name']}|{runner['os']}| {ENDPOINT1_ORG} |{status}|")
+        wks.update_value('A'+count_str, runner['name']) 
+        wks.update_value('B'+count_str, runner['os'])
+        wks.update_value('C'+count_str, status) 
+        wks.update_value('D'+count_str, f"{ENDPOINT1_ORG}") 
+        wks.update_value('E'+count_str, f"=(NOW()-F"+count_str+")*1440") 
+        wks.update_value('F'+count_str, str(now)) 
+        count += 1
+    if (ENDPOINT1_LAST_ID+1 != count):
+        print("Error!!")
+else:
+    print(f"Failed to retrieve runners. Status code: {response.status_code}")
+
+
+# Index ENDPOINT2_FIRST_ID~ENDPOINT2_LAST_ID
+
+# HTTP headers
+headers = {"Authorization": f"token {ENDPOINT2_HEADER_TOKEN}"}
+
+# Make the request
+response = requests.get(GITHUB_API_ENDPOINT2, headers=headers)
+
+# Check if the request was successful
+count=int(ENDPOINT2_FIRST_ID)
+if response.status_code == 200:
+    #print(f"{response.json()}")
     runners = response.json().get('runners', [])
 
     count_str=str(count)
     for runner in runners:  
         status=get_status(runner)
-        print(f"|{count_str}  |{runner['name']}|{platform.system()} {platform.release()}|{OWNER}/{REPO} |{status}|")
+        print(f"|{count_str}  |{runner['name']}|{runner['os']}| {ENDPOINT2_ORG}/{ENDPOINT2_REPO}|{status}|")
         wks.update_value('A'+count_str, runner['name']) 
-        wks.update_value('B'+count_str, platform.system()+platform.release())
+        wks.update_value('B'+count_str, runner['os'])
         wks.update_value('C'+count_str, status) 
-        wks.update_value('D'+count_str, f"{OWNER}/{REPO}") 
+        wks.update_value('D'+count_str, f"{ENDPOINT2_ORG}/{ENDPOINT2_REPO}") 
         wks.update_value('E'+count_str, f"=(NOW()-F"+count_str+")*1440") 
         wks.update_value('F'+count_str, str(now)) 
         count += 1
+    if (ENDPOINT2_LAST_ID+1 != count):
+        print("Error!!")
 else:
     print(f"Failed to retrieve runners. Status code: {response.status_code}")
-
-if (THIS_LAST_ID+1 != count):
-    print("Error!!")
-# [Index count~TOTAL_LAST_ID]:
-for i in range(THIS_LAST_ID+1, TOTAL_LAST_ID+1 ):
-    data_A = wks.get_value('A'+str(i))
-    data_C = wks.get_value('C'+str(i))
-    data_F = wks.get_value('F'+str(i))
-    if (data_F):
-        elapsed = (now - datetime.strptime(data_F,"%Y-%m-%d %H:%M:%S"))
-        elapsed_minutes =  round(elapsed.total_seconds() / 60, 1)
-        print(f"|{str(i)}  |{data_A}|----------|------------------------|",end ="")
-        if (elapsed_minutes >= 10):     
-            wks.update_value('C'+str(i), "offline") 
-            print(f"offline|")
-        else:
-            print(f"|{data_C}|")

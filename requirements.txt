@@ -1,0 +1,4 @@
+requests
+pygsheets
+pandas
+python-dotenv
