@@ -15,7 +15,7 @@ jobs:
       runs-on: [Windows, x64, Self-hosted]
       steps:
         - name: check repo content
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
         - name: setup python
           uses: actions/setup-python@v5
 #          with:
