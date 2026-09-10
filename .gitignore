@@ -4,5 +4,6 @@
 .claude/
 __pycache__/
 
-# Built by install-task.ps1 from MarsHostSwitchLauncher.cs
+# Built by install-task.ps1 from MarsHostSwitchLauncher.cs / MarsHostSwitchNotifyLauncher.cs
 MarsHostSwitchLauncher.exe
+MarsHostSwitchNotifyLauncher.exe

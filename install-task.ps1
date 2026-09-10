@@ -11,6 +11,7 @@ $taskName       = "MarsHostSwitcher"
 $notifyTaskName = "MarsHostSwitcherNotify"
 $oldTaskName    = "SyncSynologyHosts"
 $scriptPath     = Join-Path (Get-Location) "switch-hosts.ps1"
+$notifyLauncherExe = Join-Path (Get-Location) "MarsHostSwitchNotifyLauncher.exe"
 
 if (-not (Test-Path $scriptPath)) {
     Write-Error "Could not find switch-hosts.ps1!"
@@ -134,8 +135,7 @@ $triggers
 $settings
   <Actions Context="Author">
     <Exec>
-      <Command>powershell.exe</Command>
-      <Arguments>-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "$scriptPath" -NotifyOnly</Arguments>
+      <Command>$notifyLauncherExe</Command>
     </Exec>
   </Actions>
 </Task>
@@ -199,6 +199,16 @@ if ($csc -and (Test-Path $launcherCs)) {
     Write-Host "  Compiled silent launcher: $launcherExe" -ForegroundColor Cyan
 } else {
     Write-Warning "csc.exe not found or MarsHostSwitchLauncher.cs missing; desktop shortcut will not be (re)built."
+}
+
+# MarsHostSwitcherNotify 的 Action 也一樣，改叫編譯過的 GUI 子系統啟動器，
+# 避免 Task Scheduler 直接叫 powershell.exe（主控台子系統）短暫閃出視窗。
+$notifyLauncherCs = Join-Path (Get-Location) "MarsHostSwitchNotifyLauncher.cs"
+if ($csc -and (Test-Path $notifyLauncherCs)) {
+    & $csc /nologo /target:winexe /platform:x64 /out:"$notifyLauncherExe" "$notifyLauncherCs" | Out-Null
+    Write-Host "  Compiled notify launcher: $notifyLauncherExe" -ForegroundColor Cyan
+} else {
+    Write-Warning "csc.exe not found or MarsHostSwitchNotifyLauncher.cs missing; notify task will not be (re)built."
 }
 
 # --- 建立/更新桌面捷徑 ---
