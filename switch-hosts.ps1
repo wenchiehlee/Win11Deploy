@@ -150,7 +150,7 @@ if (-not $atHome) {
     $templateLines = $templateLines | ForEach-Object { if ($_ -match "\S" -and $_ -notmatch "^#") { "#" + $_ } else { $_ } }
 }
 
-$maxRetries = 5
+$maxRetries = 15
 $retryCount = 0
 $success    = $false
 while (-not $success -and $retryCount -lt $maxRetries) {

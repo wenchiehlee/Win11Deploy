@@ -11,7 +11,6 @@ $taskName       = "MarsHostSwitcher"
 $notifyTaskName = "MarsHostSwitcherNotify"
 $oldTaskName    = "SyncSynologyHosts"
 $scriptPath     = Join-Path (Get-Location) "switch-hosts.ps1"
-$vbsPath        = Join-Path (Get-Location) "launcher.vbs"
 
 if (-not (Test-Path $scriptPath)) {
     Write-Error "Could not find switch-hosts.ps1!"
@@ -135,8 +134,8 @@ $triggers
 $settings
   <Actions Context="Author">
     <Exec>
-      <Command>wscript.exe</Command>
-      <Arguments>"$vbsPath" "$scriptPath" -NotifyOnly</Arguments>
+      <Command>powershell.exe</Command>
+      <Arguments>-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "$scriptPath" -NotifyOnly</Arguments>
     </Exec>
   </Actions>
 </Task>
@@ -145,6 +144,32 @@ $settings
 # 註冊兩個任務
 Register-ScheduledTask -Xml $mainTaskXml   -TaskName $taskName       -Force
 Register-ScheduledTask -Xml $notifyTaskXml -TaskName $notifyTaskName -Force
+
+# --- 修正共用狀態目錄權限 ---
+# SYSTEM 任務會先建立 log/lastrun/result 檔案，若不明確授權一般使用者
+# 寫入權限，Notify 任務（以目前使用者身分執行）會在寫入時遇到 Access Denied，
+# 導致通知悄悄失效但工作排程器仍回報「成功」。
+$sharedDir = "C:\ProgramData\MarsHostSwitcher"
+if (-not (Test-Path $sharedDir)) { New-Item -ItemType Directory -Path $sharedDir -Force | Out-Null }
+icacls $sharedDir /grant "*S-1-5-32-545:(OI)(CI)M" /T | Out-Null
+Write-Host "  Granted Users modify access on '$sharedDir'" -ForegroundColor Cyan
+
+# --- 授權目前使用者可手動「立即執行」這兩個工作 ---
+# Register-ScheduledTask 預設只把 SYSTEM 任務的執行權限給 Administrators/SYSTEM，
+# 一般使用者（例如桌面捷徑點擊者）完全沒有權限觸發 Run()，會得到 Access Denied。
+# 這裡明確把「立即執行」權限授予目前這個使用者帳號。
+$sch = New-Object -ComObject "Schedule.Service"
+$sch.Connect()
+$rootFolder = $sch.GetFolder("\")
+$grantSddl = "(A;;0x1f019f;;;$userSid)"
+foreach ($tn in @($taskName, $notifyTaskName)) {
+    $t = $rootFolder.GetTask($tn)
+    $sd = $t.GetSecurityDescriptor(4)
+    if ($sd -notlike "*(A;;0x1f019f;;;$userSid)*") {
+        $t.SetSecurityDescriptor($sd + $grantSddl, 0)
+    }
+}
+Write-Host "  Granted '$env:USERNAME' rights to manually run both tasks" -ForegroundColor Cyan
 
 Write-Host ""
 Write-Host "Successfully installed tasks:" -ForegroundColor Green
