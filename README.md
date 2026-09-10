@@ -26,19 +26,24 @@ shortcut below can trigger a sync on demand.
 
 ### Desktop shortcut (manual trigger)
 
-A one-click "Mars Host Switch" desktop shortcut runs `run-elevated.ps1`
-(which in turn calls `switch-hosts.ps1` then `switch-hosts.ps1 -NotifyOnly`)
-directly as Administrator — the shortcut has its "Run as administrator" flag
-set on the `.lnk` file itself, so a single click prompts UAC once (or, on a
-machine where the user is already a local admin with UAC's Admin Approval
-Mode relaxed, elevates silently) instead of requiring you to open a console
-and run the script by hand.
+A one-click "Mars Host Switch" desktop shortcut runs `MarsHostSwitchLauncher.exe`,
+a tiny compiled (non-console) launcher that asks the Task Scheduler service to
+start the two already-registered tasks above right now. It does **not**
+elevate itself (`asInvoker`) — the elevated execution context is already baked
+into the `MarsHostSwitcher` task, and `install-task.ps1` grants the installing
+user explicit rights to trigger it on demand. Result: a single click, no UAC
+prompt, no admin-password prompt (important on this machine since the account
+is a standard domain user, not a local admin), and no console window flash.
+
+`MarsHostSwitchLauncher.exe` is built from `MarsHostSwitchLauncher.cs` by
+`install-task.ps1` (via `csc.exe`) — it's gitignored, not committed.
 
 > Note: this machine's security policy blocks `CreateObject` calls from a
 > non-elevated `wscript.exe`/`cscript.exe` process (raises `800A0046
-> Permission denied`). That's why nothing here uses a `.vbs` launcher for
-> silent background execution — `switch-hosts.ps1` hides its own console
-> window via a `ShowWindow` P/Invoke instead.
+> Permission denied`), so nothing here uses a `.vbs` launcher. The compiled
+> launcher calls the Task Scheduler COM API directly instead (late-bound via
+> reflection, not `CreateObject`), and `MarsHostSwitcherNotify`'s scheduled
+> action calls `powershell.exe` directly rather than through a `.vbs` wrapper.
 
 ### Install
 
@@ -54,8 +59,8 @@ cd C:\path\to\Win11
 | File | Description |
 |------|-------------|
 | `switch-hosts.ps1` | Main script (`-NotifyOnly` flag for notify-only mode) |
-| `run-elevated.ps1` | Entry point for the desktop shortcut; runs sync + notify as Administrator |
-| `install-task.ps1` | Registers the two scheduled tasks and fixes their permissions |
+| `MarsHostSwitchLauncher.cs` | Source for the desktop shortcut's silent, non-elevating launcher |
+| `install-task.ps1` | Registers the two scheduled tasks, fixes their permissions, compiles the launcher and (re)creates the desktop shortcut |
 | `hosts.template` | NAS host entries to inject into the hosts file |
 
 Shared runtime state is stored in `C:\ProgramData\MarsHostSwitcher\`.

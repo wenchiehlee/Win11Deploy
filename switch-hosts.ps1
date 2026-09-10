@@ -2,6 +2,16 @@
 # Pure ASCII script. Optimized for ZERO-FLASHING and THROTTLED notifications.
 param([switch]$NotifyOnly)
 
+# -WindowStyle Hidden alone still lets the console flash briefly on some
+# hosts (e.g. Windows Terminal as default terminal app); hide it immediately.
+try {
+    Add-Type -Name Win -Namespace Console -MemberDefinition '
+        [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int cmdShow);
+    ' -ErrorAction Stop
+    [Console.Win]::ShowWindow([Console.Win]::GetConsoleWindow(), 0) | Out-Null
+} catch {}
+
 $sharedDir  = "C:\ProgramData\MarsHostSwitcher"
 if (-not (Test-Path $sharedDir)) { New-Item -ItemType Directory -Path $sharedDir -Force | Out-Null }
 $logFile    = "$sharedDir\MarsHostSwitcher.log"

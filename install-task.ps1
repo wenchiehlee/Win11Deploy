@@ -171,6 +171,53 @@ foreach ($tn in @($taskName, $notifyTaskName)) {
 }
 Write-Host "  Granted '$env:USERNAME' rights to manually run both tasks" -ForegroundColor Cyan
 
+# --- 編譯桌面捷徑用的靜默啟動器 ---
+# 這台機器上的帳號是網域標準使用者（非本機管理員），Windows 不允許標準
+# 使用者「手動觸發」任何以更高權限執行的動作卻不輸入管理員密碼——即使
+# 該動作背後的排程工作本身已內建 SYSTEM 權限也一樣，這是作業系統層級
+# 的安全機制，無法繞過。所以桌面捷徑改用 requireAdministrator manifest
+# 直接讓整個啟動器自我提權，點擊後會跳出一次管理員密碼提示。
+# 編譯成 GUI 子系統的小型 exe（而非呼叫 schtasks.exe 或 launcher.vbs）
+# 避開了兩個問題：(1) console 子系統程式透過捷徑啟動時會短暫閃現主控台
+# 視窗；(2) 這台機器的資安政策會封鎖非提權 wscript.exe/cscript.exe 呼叫
+# CreateObject（錯誤 800A0046）——編譯出的 exe 走 .NET Process API，不受影響。
+#
+# 相對地，MarsHostSwitcherNotify／MarsHostSwitcher 這兩個排程工作本身的
+# 「自動」觸發（登入 / 網路變動 / 解鎖）是由 Task Scheduler 服務自己發起，
+# 不是使用者手動觸發，所以完全不受這條限制影響，不會跳任何密碼提示。
+$launcherCs       = Join-Path (Get-Location) "MarsHostSwitchLauncher.cs"
+$launcherManifest = Join-Path (Get-Location) "MarsHostSwitchLauncher.manifest"
+$launcherExe      = Join-Path (Get-Location) "MarsHostSwitchLauncher.exe"
+$csc = Get-ChildItem "$env:WINDIR\Microsoft.NET\Framework64\v*\csc.exe" -ErrorAction SilentlyContinue |
+    Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+if (-not $csc) {
+    $csc = Get-ChildItem "$env:WINDIR\Microsoft.NET\Framework\v*\csc.exe" -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+}
+if ($csc -and (Test-Path $launcherCs)) {
+    & $csc /nologo /target:winexe /platform:x64 /win32manifest:"$launcherManifest" /out:"$launcherExe" "$launcherCs" | Out-Null
+    Write-Host "  Compiled silent launcher: $launcherExe" -ForegroundColor Cyan
+} else {
+    Write-Warning "csc.exe not found or MarsHostSwitchLauncher.cs missing; desktop shortcut will not be (re)built."
+}
+
+# --- 建立/更新桌面捷徑 ---
+if (Test-Path $launcherExe) {
+    $desktopShortcut = Join-Path ([Environment]::GetFolderPath("Desktop")) "Mars Host Switch.lnk"
+    $WshShell2 = New-Object -ComObject WScript.Shell
+    $sc2 = $WshShell2.CreateShortcut($desktopShortcut)
+    $sc2.TargetPath = $launcherExe
+    $sc2.WorkingDirectory = Split-Path $launcherExe
+    $sc2.IconLocation = "shell32.dll,44"
+    $sc2.Description = "立即切換 NAS Hosts 設定 (Mars/Office) - 會要求管理員密碼"
+    $sc2.Save()
+    # 保險起見同時設定 .lnk 的 run-as-administrator 旗標（manifest 已經要求了，這裡是雙重保障）
+    $b = [System.IO.File]::ReadAllBytes($desktopShortcut)
+    $b[0x15] = $b[0x15] -bor 0x20
+    [System.IO.File]::WriteAllBytes($desktopShortcut, $b)
+    Write-Host "  Desktop shortcut: $desktopShortcut" -ForegroundColor Cyan
+}
+
 Write-Host ""
 Write-Host "Successfully installed tasks:" -ForegroundColor Green
 Write-Host "  '$taskName'       — runs as SYSTEM, modifies hosts file" -ForegroundColor Cyan

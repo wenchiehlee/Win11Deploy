@@ -3,3 +3,6 @@
 # Gemini CLI safety audit
 .claude/
 __pycache__/
+
+# Built by install-task.ps1 from MarsHostSwitchLauncher.cs
+MarsHostSwitchLauncher.exe
